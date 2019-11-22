@@ -11,6 +11,12 @@ Made with ❤️ by  Trend Micro (tejas_s@trendmicro.com). Available on the [AWS
   After deployment it will generate API gateway URL that need to be added to DS smart check web console. To add api gateway URL navigate to web hooks in DSSC console and create eb hook and add URL.
 
   NOTE: kindly select option to send notification when image scan completed. other wise it will keep on sending unnecessary messages to this serverless application. 
+  
+  #### Steps to configure DSSC slack notification application.
+ 
+![alt text](https://github.com/tsheth/Deep-Security-unified-ssm/blob/master/git-snaps/1.PNG)
+
+
 
 we appreciate your feedback for any enhancement need to be done
 
