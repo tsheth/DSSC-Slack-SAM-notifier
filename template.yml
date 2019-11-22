@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  DSSC-Notification-application
+
+  This serverless application integrates with Trend Micro deep security smart check as web hook and sends scan notifications to your slack channel on security risk findings.
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources: 
+
+  DSSCSlackNotifier:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: s3://dssc-slack-notifier-code/DSSC-Notifier-webhook.zip
+      Handler: lambda_function.lambda_handler
+      Runtime: python2.7
+      MemorySize: 512
+      Timeout: 900
+      Environment:
+        Variables:
+          SLACK_WEBHOOK_URL: "<add-your-slack-incomming-webhook-url>"
+          SLACK_CHANNEL: "<slack-channel-name>"
+          DSSC_URL: "<smartcheck dashboard url e.g. dssc.example.com>"
+      Events:
+        HttpPost:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /
+            Method: POST
+
+Outputs:
+
+  DSSCSlackNotifier:
+    Description: "Deep Security Lambda Function ARN for slack notifier function"
+    Value: !GetAtt DSSCSlackNotifier.Arn
+
+  BasicAWSApiGateway:
+    Description: 'API Gateway endpoint URL for Staging stage for Hello World function'
+    Value: !Sub 'https://${BasicAWSApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/'
+
