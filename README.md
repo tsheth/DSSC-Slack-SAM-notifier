@@ -6,7 +6,7 @@ Made with ❤️ by  Trend Micro. Available on the [AWS Serverless Application R
 
   In order to make it more reliable and easy to deploy we have created notification web hook listener as serverless application that uses AWS Lambda, AWS API gateway. We have hosted this application in serverless application repository for easy single click deployment for customer. It is accessible from public AWS serverless application repository. 
   
-  After deployment it will generate API gateway URL that need to be added to DS smart check web console. To add api gateway URL navigate to web hooks in DSSC console and create eb hook and add URL.
+  After deployment it will generate API gateway URL that need to be added to DS smart check web console. To add api gateway URL navigate to web hooks in DSSC console. Click on create web hook and add URL.
 
   NOTE: kindly select option to send notification when image scan completed. other wise it will keep on sending unnecessary messages to this serverless application. 
   
