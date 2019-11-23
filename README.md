@@ -33,6 +33,10 @@ After deployment it will generate API gateway URL that need to be added to DS sm
 Add api gateway URL to DSSC web hook console
 
 ![alt text](https://github.com/tsheth/DSSC-Slack-SAM-notifier/blob/master/blob/6.PNG)
+ 
+ After configuration, you will receive notification in your slack channel for every DSSC scan configured with incoming webhook.
+
+![alt text](https://github.com/tsheth/DSSC-Slack-SAM-notifier/blob/master/blob/7.PNG)
 
 
 
