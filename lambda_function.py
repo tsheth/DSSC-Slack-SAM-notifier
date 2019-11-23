@@ -14,14 +14,15 @@ logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     # Read message posted on SNS Topic
+    print(event)
     flag = False
     if 'body' in event:
         jsonBody = json.loads(event['body'])
     else:
         jsonBody = event
-
+        
     message = jsonBody['scan']['findings']['vulnerabilities']
-    # logger.info("Message: " + str(message))
+    #logger.info("Message: " + str(message))
     notification_output = "I have found "
 
     # detect vulnerability and render dynamic message output in slack
@@ -37,10 +38,13 @@ def lambda_handler(event, context):
     if 'unknown' in message['total']:
         notification_output += ", " + str(message['total']['unknown']) + " unknown vulnerabilities "
         flag = True
-    if 'high' not in message['total'] and 'medium' not in message['total'] and 'low' not in message[
-        'total'] and 'unknown' not in message['total']:
+    if 'negligible' in message['total']:
+        notification_output += ", " + str(message['total']['negligible']) + " negligible vulnerabilities "
+        flag = True
+        
+    if 'high' not in message['total'] and 'medium' not in message['total'] and 'low' not in message['total'] and 'unknown' not in message['total'] and 'negligible' not in message['total']:
         notification_output += " no vulnerabilities "
-
+    
     # Detect malware and render dynamic message output in slack
     if 'malware' in jsonBody['scan']['findings']:
         if int(jsonBody['scan']['findings']['malware']) > 0:
@@ -50,42 +54,44 @@ def lambda_handler(event, context):
     # Detect secrets stored in scanned image and render text message output
     if 'contents' in jsonBody['scan']['findings']:
         if 'high' in jsonBody['scan']['findings']['contents']['total']:
-            notification_output += str(
-                jsonBody['scan']['findings']['contents']['total']['high']) + " high risk content or secrets "
+            notification_output += str(jsonBody['scan']['findings']['contents']['total']['high']) + " high risk content or secrets "
             flag = True
     # Identify PCI-DSS, HIPPA, and NIST compliance violations
     if 'checklists' in jsonBody['scan']['findings']:
         total_violation = 0
         if 'high' in jsonBody['scan']['findings']['checklists']['total']:
             total_violation += int(jsonBody['scan']['findings']['checklists']['total']['high'])
-            flag = True
+            
         if 'medium' in jsonBody['scan']['findings']['checklists']['total']:
             total_violation += int(jsonBody['scan']['findings']['checklists']['total']['medium'])
-            flag = True
+            
         if 'low' in jsonBody['scan']['findings']['checklists']['total']:
             total_violation += int(jsonBody['scan']['findings']['checklists']['total']['low'])
+            
+        if total_violation != 0:
             flag = True
-        notification_output += "and, " + str(
-            total_violation) + " total compliance checklist violations in PCI-DSS, HIPPA, and NIST"
+            notification_output += "and, " + str(total_violation) + " total compliance checklist violations in PCI-DSS, HIPPA, and NIST"
 
     scan_ui_path = DSSC_URL + str(jsonBody['scan']['href']).replace('/api/', '/')
-    notification_output += " in " + str(
-        jsonBody['scan']['name']) + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
+    scan_image_name = str(jsonBody['scan']['source']['registry']) + "/" + str(jsonBody['scan']['source']['repository']) + ":" + str(jsonBody['scan']['source']['tag'])
+    
+    notification_output += " in " + scan_image_name + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
+    
+    if flag:
+        # Construct a new slack message
+        slack_message = {
+            'channel': SLACK_CHANNEL,
+            'text': "%s" % (notification_output),
+            "icon_url": "https://aws-code-bucket-tejas.s3.us-east-2.amazonaws.com/Picture1.png"
+        }
+        # Post message on SLACK_WEBHOOK_URL
 
-    # Construct a new slack message
-    slack_message = {
-        'channel': SLACK_CHANNEL,
-        'text': "%s" % (notification_output),
-        "icon_url": "https://aws-code-bucket-tejas.s3.us-east-2.amazonaws.com/Picture1.png"
-    }
-    # Post message on SLACK_WEBHOOK_URL
-
-    req = Request(SLACK_WEBHOOK_URL, json.dumps(slack_message))
-    try:
-        response = urlopen(req)
-        response.read()
-        logger.info("Message posted to %s", slack_message['channel'])
-    except HTTPError as e:
-        logger.error("Request failed: %d %s", e.code, e.reason)
-    except URLError as e:
-        logger.error("Server connection failed: %s", e.reason)
+        req = Request(SLACK_WEBHOOK_URL, json.dumps(slack_message))
+        try:
+            response = urlopen(req)
+            response.read()
+            logger.info("Message posted to %s", slack_message['channel'])
+        except HTTPError as e:
+            logger.error("Request failed: %d %s", e.code, e.reason)
+        except URLError as e:
+            logger.error("Server connection failed: %s", e.reason)
