@@ -77,8 +77,8 @@ def lambda_handler(event, context):
                 total_violation) + " total compliance checklist violations in PCI-DSS, HIPPA, and NIST"
 
     scan_ui_path = DSSC_URL + str(jsonBody['scan']['href']).replace('/api/', '/')
-    notification_output += " in " + str(
-        jsonBody['scan']['name']) + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
+    scan_image_name = str(jsonBody['scan']['source']['registry']) + "/" + str(jsonBody['scan']['source']['repository']) + ":" + str(jsonBody['scan']['source']['tag'])
+    notification_output += " in " + scan_image_name + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
     if flag:
         # Construct a new slack message
         slack_message = {
