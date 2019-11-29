@@ -20,9 +20,9 @@ def lambda_handler(event, context):
         jsonBody = json.loads(event['body'])
     else:
         jsonBody = event
-        
+
     message = jsonBody['scan']['findings']['vulnerabilities']
-    #logger.info("Message: " + str(message))
+    # logger.info("Message: " + str(message))
     notification_output = "I have found "
 
     # detect vulnerability and render dynamic message output in slack
@@ -41,10 +41,12 @@ def lambda_handler(event, context):
     if 'negligible' in message['total']:
         notification_output += ", " + str(message['total']['negligible']) + " negligible vulnerabilities "
         flag = True
-        
-    if 'high' not in message['total'] and 'medium' not in message['total'] and 'low' not in message['total'] and 'unknown' not in message['total'] and 'negligible' not in message['total']:
-        notification_output += " no vulnerabilities "
-    
+    if 'defcon1' in message['total']:
+        notification_output += ", " + str(message['total']['defcon1']) + " Critical vulnerabilities that requires your immidiate attention to fix. "
+        flag = True
+    if not flag:
+        notification_output += " no vulnerabilities. "
+
     # Detect malware and render dynamic message output in slack
     if 'malware' in jsonBody['scan']['findings']:
         if int(jsonBody['scan']['findings']['malware']) > 0:
@@ -54,29 +56,29 @@ def lambda_handler(event, context):
     # Detect secrets stored in scanned image and render text message output
     if 'contents' in jsonBody['scan']['findings']:
         if 'high' in jsonBody['scan']['findings']['contents']['total']:
-            notification_output += str(jsonBody['scan']['findings']['contents']['total']['high']) + " high risk content or secrets "
+            notification_output += str(
+                jsonBody['scan']['findings']['contents']['total']['high']) + " high risk content or secrets "
             flag = True
     # Identify PCI-DSS, HIPPA, and NIST compliance violations
     if 'checklists' in jsonBody['scan']['findings']:
         total_violation = 0
         if 'high' in jsonBody['scan']['findings']['checklists']['total']:
             total_violation += int(jsonBody['scan']['findings']['checklists']['total']['high'])
-            
+
         if 'medium' in jsonBody['scan']['findings']['checklists']['total']:
             total_violation += int(jsonBody['scan']['findings']['checklists']['total']['medium'])
-            
+
         if 'low' in jsonBody['scan']['findings']['checklists']['total']:
             total_violation += int(jsonBody['scan']['findings']['checklists']['total']['low'])
-            
+
         if total_violation != 0:
             flag = True
-            notification_output += "and, " + str(total_violation) + " total compliance checklist violations in PCI-DSS, HIPPA, and NIST"
+            notification_output += "and, " + str(
+                total_violation) + " total compliance checklist violations in PCI-DSS, HIPPA, and NIST"
 
     scan_ui_path = DSSC_URL + str(jsonBody['scan']['href']).replace('/api/', '/')
-    scan_image_name = str(jsonBody['scan']['source']['registry']) + "/" + str(jsonBody['scan']['source']['repository']) + ":" + str(jsonBody['scan']['source']['tag'])
-    
-    notification_output += " in " + scan_image_name + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
-    
+    notification_output += " in " + str(
+        jsonBody['scan']['name']) + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
     if flag:
         # Construct a new slack message
         slack_message = {
