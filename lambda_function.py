@@ -23,7 +23,7 @@ def lambda_handler(event, context):
 
     message = jsonBody['scan']['findings']['vulnerabilities']
     # logger.info("Message: " + str(message))
-    notification_output = "I have found "
+    notification_output = "Trend Micro has found "
 
     # detect vulnerability and render dynamic message output in slack
     if 'high' in message['total']:
@@ -76,9 +76,15 @@ def lambda_handler(event, context):
             notification_output += "and, " + str(
                 total_violation) + " total compliance checklist violations in PCI-DSS, HIPPA, and NIST"
 
-    scan_ui_path = DSSC_URL + str(jsonBody['scan']['href']).replace('/api/', '/')
-    scan_image_name = str(jsonBody['scan']['source']['registry']) + "/" + str(jsonBody['scan']['source']['repository']) + ":" + str(jsonBody['scan']['source']['tag'])
-    notification_output += " in " + scan_image_name + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
+    if 'registry' in jsonBody['scan']['source']:
+        scan_ui_path = DSSC_URL + str(jsonBody['scan']['href']).replace('/api/', '/')
+        scan_image_name = str(jsonBody['scan']['source']['registry']) + "/" + str(jsonBody['scan']['source']['repository']) + ":" + str(jsonBody['scan']['source']['tag'])
+        notification_output += " in " + scan_image_name + " image scan. For more details log in to DSSC console by visiting " + scan_ui_path
+    elif 'url' in jsonBody['scan']['source']:
+        malicious_file_path = str(jsonBody['scan']['source']['url']).split("?", 1)[0]
+        notification_output += "uploaded from application to AWS S3 bucket. We recommend you to verify uploaded object and delete from S3 bucket. Object Details: " + malicious_file_path
+    else:
+        notification_output += "Seems like unknown object got scanned that is not covered in this automation. Kindly contact trend micro support to get it fixed."
     if flag:
         # Construct a new slack message
         slack_message = {
